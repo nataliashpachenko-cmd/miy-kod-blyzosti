@@ -275,7 +275,6 @@ body{min-height:100vh}
     </div>
     <div class="q-footer">
       <button class="btn-ghost" id="prevBtn" onclick="nav(-1)" disabled>← Назад</button>
-      <button class="btn-beige" id="nextBtn" onclick="nav(1)">Далі →</button>
     </div>
   </div>
 </div>
@@ -603,7 +602,17 @@ function renderQ(){
   document.getElementById('prevBtn').disabled=cur===0;
 }
 
-function pick(v,btn){ans[cur]=v;document.querySelectorAll('.s-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');}
+function pick(v,btn){
+  ans[cur]=v;
+  document.querySelectorAll('.s-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  setTimeout(()=>{
+    if(cur===allQ.length-1){show('openq');return;}
+    cur++;
+    renderQ();
+    window.scrollTo(0,0);
+  },280);
+}
 
 function nav(d){
   if(d===1){
