@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Мій код близькості — Наталія Дороган</title>
@@ -352,6 +353,9 @@ body{min-height:100vh}
       </div>
       <div class="ai-text" id="aiText"></div>
     </div>
+    <div style="text-align:center;margin:1.5rem 0">
+      <button onclick="downloadPDF()" style="padding:12px 24px;background:var(--blue);color:white;border:none;border-radius:var(--r4);font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer" onmouseover="this.style.background='var(--blue-dark)'" onmouseout="this.style.background='var(--blue)'">⬇ Завантажити результат у PDF</button>
+    </div>
 
     <div class="sec-label">Твоя реакція на результат</div>
     <div style="background:var(--white);border:1px solid var(--ink-20);border-radius:var(--r8);padding:1.25rem;margin-bottom:2rem">
@@ -620,7 +624,7 @@ function sendComment(){
   document.getElementById('userComment').disabled = true;
   status.style.display = 'inline';
   // Optionally send to backend
-  fetch('/api/save-contact', {
+  fetch('https://kod-blyzkosti-proxy.nataliashpachenko.workers.dev/save-contact', {
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
@@ -671,7 +675,7 @@ ${prof}
     renderResult(sc,sorted,top3,bot3,pct,aiResult,show3);
     if(userEmail){
       try{
-        await fetch('/.netlify/functions/save-contact',{
+        await fetch('https://kod-blyzkosti-proxy.nataliashpachenko.workers.dev/save-contact',{
           method:'POST',
           headers:{'Content-Type':'application/json'},
           body:JSON.stringify({
@@ -692,6 +696,7 @@ ${prof}
 
 function renderResult(sc,sorted,top3,bot3,pct,aiTxt,show3){
   const userName=document.getElementById('userName').value.trim();
+  window._pdfData={sc,sorted,top3,bot3,pct,aiTxt,show3,userName,gender,relStatus};
   const nameLabel=userName?userName+',' :'';
   document.getElementById('rEyebrow').textContent=userName?`Результат для ${userName}`:'Твій результат';
   const makeTitle=(txt)=>{
@@ -725,6 +730,61 @@ function renderResult(sc,sorted,top3,bot3,pct,aiTxt,show3){
 
   show('result');
   setTimeout(()=>{document.querySelectorAll('.bar-fill[data-w]').forEach(el=>el.style.width=el.dataset.w);},120);
+}
+
+function downloadPDF(){
+  const d=window._pdfData;
+  if(!d){alert('Спочатку дочекайся результату тесту.');return;}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'pt',format:'a4'});
+  const pageWidth=doc.internal.pageSize.getWidth();
+  const margin=48;
+  const maxWidth=pageWidth-margin*2;
+  let y=60;
+
+  const addWrapped=(text,size,style,gap,color)=>{
+    doc.setFont('helvetica',style||'normal');
+    doc.setFontSize(size);
+    if(color)doc.setTextColor(...color);else doc.setTextColor(30,30,30);
+    const lines=doc.splitTextToSize(text,maxWidth);
+    lines.forEach(line=>{
+      if(y>780){doc.addPage();y=60;}
+      doc.text(line,margin,y);
+      y+=size*1.35;
+    });
+    y+=gap||6;
+  };
+
+  addWrapped('Мій код близькості',22,'bold',4,[46,134,171]);
+  addWrapped('Персональний психологічний профіль · Наталія Дороган',11,'normal',18,[110,110,110]);
+
+  if(d.userName)addWrapped(`Ім'я: ${d.userName}`,11,'normal',2);
+  addWrapped(`Стать: ${d.gender==='f'?'Жінка':'Чоловік'}`,11,'normal',2);
+  addWrapped(`Статус: ${d.relStatus==='in_relationship'?'У стосунках':'Не в стосунках'}`,11,'normal',14);
+
+  addWrapped('Профіль по 10 схемах (шкала 4–24)',14,'bold',8,[30,30,30]);
+  d.sorted.forEach(b=>{
+    addWrapped(`${b.name}: ${d.sc[b.key]}/24`,11,'normal',3);
+  });
+  y+=8;
+
+  addWrapped('Найактивніші схеми',13,'bold',6,[30,30,30]);
+  d.top3.forEach(b=>addWrapped(`• ${b.name} (${d.sc[b.key]}/24)`,11,'normal',3));
+  y+=8;
+
+  addWrapped('Ресурсні сторони',13,'bold',6,[30,30,30]);
+  d.bot3.forEach(b=>addWrapped(`• ${b.name} (${d.sc[b.key]}/24)`,11,'normal',3));
+  y+=10;
+
+  addWrapped('Висновок психотерапевта',14,'bold',8,[30,30,30]);
+  d.aiTxt.split('\n').filter(p=>p.trim()).forEach(p=>addWrapped(p,11,'normal',10));
+
+  y+=10;
+  addWrapped('Наталія Дороган — психотерапевт, гештальт-терапевт, схема-терапевт',10,'italic',0,[130,130,130]);
+  addWrapped('nataliiadorogan.com.ua',10,'italic',0,[130,130,130]);
+
+  const fileName=(d.userName?d.userName+'_':'')+'miy-kod-blyzkosti.pdf';
+  doc.save(fileName);
 }
 </script>
 </body>
