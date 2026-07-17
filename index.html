@@ -494,7 +494,7 @@ async function startPayment() {
   const btns = document.querySelectorAll('[onclick*="startPayment"]');
   btns.forEach(b=>{ if(b.tagName==='BUTTON'){b.textContent='Зачекайте...';b.disabled=true;} });
   try {
-    const res = await fetch('/.netlify/functions/create-payment', { method: 'POST' });
+    const res = await fetch('https://kod-blyzkosti-proxy.nataliashpachenko.workers.dev/create-payment', { method: 'POST' });
     const data = await res.json();
     const form = document.createElement('form');
     form.method = 'POST';
