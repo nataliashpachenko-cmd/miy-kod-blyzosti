@@ -732,7 +732,7 @@ function renderResult(sc,sorted,top3,bot3,pct,aiTxt,show3){
   show3.forEach(b=>{const d=wtdData[b.key];wtd+=`<div class="wtd-card"><div class="wtd-schema">${b.name}</div><div class="wtd-rec">${d.rec}</div><div class="wtd-ex"><strong>Вправа:</strong> ${d.ex}</div></div>`;});
   document.getElementById('whatToDoBlock').innerHTML=wtd;
 
-  document.getElementById('aiText').innerHTML=aiTxt.split('\n').filter(p=>p.trim()).map(p=>`<p>${p}</p>`).join('');
+  document.getElementById('aiText').innerHTML=stripMd(aiTxt).split('\n').filter(p=>p.trim()).map(p=>`<p>${p}</p>`).join('');
 
   const wd=gender==='f'?weakDescF:weakDescM;
   const wi=top3.map(b=>`<li>${wd[b.key]}</li>`).join('');
@@ -741,6 +741,16 @@ function renderResult(sc,sorted,top3,bot3,pct,aiTxt,show3){
 
   show('result');
   setTimeout(()=>{document.querySelectorAll('.bar-fill[data-w]').forEach(el=>el.style.width=el.dataset.w);},120);
+}
+
+function stripMd(t){
+  return t
+    .replace(/^#{1,6}\s*/gm,'')
+    .replace(/\*\*(.*?)\*\*/g,'$1')
+    .replace(/\*(.*?)\*/g,'$1')
+    .replace(/^---+\s*$/gm,'')
+    .replace(/\n{3,}/g,'\n\n')
+    .trim();
 }
 
 async function downloadPDF(btn){
@@ -765,7 +775,41 @@ async function downloadPDF(btn){
     d.bot3.map(b=>`• ${b.name} (${d.sc[b.key]}/24)`).join('<br>');
 
   document.getElementById('pdfAiText').innerHTML=
-    d.aiTxt.split('\n').filter(p=>p.trim()).map(p=>`<p style="margin:0 0 10px 0">${p}</p>`).join('');
+    stripMd(d.aiTxt).split('\n').filter(p=>p.trim()).map(p=>`<p style="margin:0 0 10px 0">${p}</p>`).join('');
+
+  let schemaAnalysisHtml='';
+  d.show3.forEach(b=>{
+    const s=d.sc[b.key],p=Math.round((s/24)*100);
+    const lvl=p>=75?'Дуже активна':'Активна';
+    schemaAnalysisHtml+=`<div style="margin-bottom:16px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:4px">${b.name} <span style="font-weight:400;color:#888">(${lvl} · ${s}/24)</span></div>
+      <div style="font-size:13px;line-height:1.6">${schemaDesc[b.key]}</div>
+    </div>`;
+  });
+  document.getElementById('pdfAnalysis').innerHTML=schemaAnalysisHtml;
+
+  let partnerViewHtml='';
+  d.show3.forEach(b=>{
+    const pv=partnerView[b.key];
+    partnerViewHtml+=`<div style="margin-bottom:16px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:4px">${b.name}</div>
+      <div style="font-size:13px;line-height:1.6;margin-bottom:4px"><strong>Як тебе бачить партнер:</strong> ${pv.sees}</div>
+      <div style="font-size:13px;line-height:1.6;margin-bottom:4px"><strong>Що відбувається між вами:</strong> ${pv.dynamic}</div>
+      <div style="font-size:13px;line-height:1.6"><strong>Що спробувати:</strong> ${pv.tip}</div>
+    </div>`;
+  });
+  document.getElementById('pdfPartnerView').innerHTML=partnerViewHtml;
+
+  let wtdHtml='';
+  d.show3.forEach(b=>{
+    const w=wtdData[b.key];
+    wtdHtml+=`<div style="margin-bottom:16px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:4px">${b.name}</div>
+      <div style="font-size:13px;line-height:1.6;margin-bottom:4px">${w.rec}</div>
+      <div style="font-size:13px;line-height:1.6"><strong>Вправа:</strong> ${w.ex}</div>
+    </div>`;
+  });
+  document.getElementById('pdfWhatToDo').innerHTML=wtdHtml;
 
   try{
     const exportEl=document.getElementById('pdfExport');
@@ -811,6 +855,12 @@ async function downloadPDF(btn){
   <div id="pdfTop" style="font-size:13px;line-height:1.9;margin-bottom:22px"></div>
   <div style="font-size:17px;font-weight:700;margin-bottom:10px">Ресурсні сторони</div>
   <div id="pdfBot" style="font-size:13px;line-height:1.9;margin-bottom:26px"></div>
+  <div style="font-size:17px;font-weight:700;margin-bottom:10px">Що означають активні схеми для твоїх стосунків</div>
+  <div id="pdfAnalysis" style="margin-bottom:22px"></div>
+  <div style="font-size:17px;font-weight:700;margin-bottom:10px">Як тебе бачить партнер — і що відбувається між вами</div>
+  <div id="pdfPartnerView" style="margin-bottom:22px"></div>
+  <div style="font-size:17px;font-weight:700;margin-bottom:10px">Що з цим робити</div>
+  <div id="pdfWhatToDo" style="margin-bottom:26px"></div>
   <div style="font-size:17px;font-weight:700;margin-bottom:10px">Висновок психотерапевта</div>
   <div id="pdfAiText" style="font-size:13.5px;line-height:1.8;margin-bottom:30px"></div>
   <div style="font-size:12px;color:#999;font-style:italic;border-top:1px solid #eee;padding-top:14px">
