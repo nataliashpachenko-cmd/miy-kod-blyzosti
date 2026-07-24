@@ -232,6 +232,11 @@ fbq('track', 'PageView');
 src="https://www.facebook.com/tr?id=1554927162681142&ev=PageView&noscript=1"
 /></noscript>
 <!-- End Meta Pixel Code -->
+<script>
+if (new URLSearchParams(window.location.search).get('paid') === '1') {
+  fbq('track', 'Purchase', {value: 299, currency: 'UAH'});
+}
+</script>
 </head>
 <body>
 
